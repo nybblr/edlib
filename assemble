@@ -1,0 +1,7 @@
+#!/bin/sh
+emcc -o wasm/edlib.js \
+  --bind \
+  -s WASM=1 \
+  -O3 \
+  -I edlib/include \
+  edlib/src/edlib.cpp

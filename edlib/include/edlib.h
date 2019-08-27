@@ -249,7 +249,19 @@ extern "C" {
     char* edlibAlignmentToCigar(const unsigned char* alignment, int alignmentLength,
                                 EdlibCigarFormat cigarFormat);
 
+    typedef struct {
+        int start;
+        int end;
+        int distance;
+    } AlignResult;
 
+    /**
+     * WASM friendly version of edlibAlign that accepts
+     * std::strings and just returns the start, end, and
+     * edit distance of the alignment.
+     */
+    AlignResult findAlign(const std::string query,
+                          const std::string target);
 
 #ifdef __cplusplus
 }
