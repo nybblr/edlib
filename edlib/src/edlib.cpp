@@ -1,3 +1,4 @@
+#include <emscripten/bind.h>
 #include "edlib.h"
 
 #include <stdint.h>
@@ -8,6 +9,7 @@
 #include <string>
 
 using namespace std;
+using namespace emscripten;
 
 typedef uint64_t Word;
 static const int WORD_SIZE = sizeof(Word) * 8; // Size of Word in bits
@@ -1458,4 +1460,44 @@ extern "C" void edlibFreeAlignResult(EdlibAlignResult result) {
     if (result.endLocations) free(result.endLocations);
     if (result.startLocations) free(result.startLocations);
     if (result.alignment) free(result.alignment);
+}
+
+/**
+ * WASM friendly version of edlibAlign that accepts
+ * std::strings and just returns the start, end, and
+ * edit distance of the alignment.
+ */
+extern "C" AlignResult findAlign(
+    const std::string query,
+    const std::string target
+) {
+
+    EdlibAlignResult edlibResult = edlibAlign(query.c_str(), query.length(), target.c_str(), target.length(), edlibNewAlignConfig(-1, EDLIB_MODE_HW, EDLIB_TASK_LOC, NULL, 0));
+
+    int start = edlibResult.startLocations[0];
+    int end = edlibResult.endLocations[0];
+    int distance = edlibResult.editDistance;
+
+    AlignResult alignResult;
+    alignResult.start = start;
+    alignResult.end = end;
+    alignResult.distance = distance;
+
+    edlibFreeAlignResult(edlibResult);
+
+    return alignResult;
+}
+
+/**
+ * Expose findAlign to WASM and serialize
+ * AlignResult to a plain ol JS object.
+ */
+EMSCRIPTEN_BINDINGS(my_module) {
+    emscripten::value_object<AlignResult>("AlignResult")
+        .field("start", &AlignResult::start)
+        .field("end", &AlignResult::end)
+        .field("distance", &AlignResult::distance)
+        ;
+
+    emscripten::function("findAlign", &findAlign);
 }
